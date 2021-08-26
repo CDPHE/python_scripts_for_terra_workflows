@@ -35,33 +35,39 @@ def extract_variant_list(json_path, seq_run):
     refAA_list = []
     altAA_list = []
     codon_pos_list = []
+    nuc_start_list = []
+    nuc_end_list = []
 
 
     with open(json_path) as f:
         data = json.load(f)
 
-    for i in range(len(data)):
+    for i in range(len(data['results'])):
 
     #     print(data[i]['seqName'])
-        if 'aaDeletions' in data[i].keys():
-            aa_deletions = data[i]['aaDeletions']
+        if 'aaDeletions' in data['results'][i].keys():
+            aa_deletions = data['results'][i]['aaDeletions']
             for item in aa_deletions:
                 gene=item['gene']
                 refAA= item['refAA']
                 altAA= 'del'
                 pos=item['codon'] + 1
+                nuc_start = item['codonNucRange']['begin']
+                nuc_end = item['codonNucRange']['end']
 
                 mutation = '%s_%s%d%s' % (gene, refAA, pos, altAA)
-                accession_id_list.append(data[i]['seqName'])
+                
+                accession_id_list.append(data['results'][i]['seqName'])
                 mutation_list.append(mutation)
                 gene_list.append(gene)
                 refAA_list.append(refAA)
                 altAA_list.append(altAA)
                 codon_pos_list.append(pos)
+                nuc_start_list.append(nuc_start)
+                nuc_end_list.append(nuc_end)
 
-
-        if 'aaSubstitutions' in data[i].keys():
-            aa_subs = data[i]['aaSubstitutions']
+        if 'aaSubstitutions' in data['results'][i].keys():
+            aa_subs = data['results'][i]['aaSubstitutions']
             for item in aa_subs:
                 gene = item['gene']
                 refAA = item['refAA']
@@ -69,15 +75,20 @@ def extract_variant_list(json_path, seq_run):
                     altAA = 'stop'
                 else:
                     altAA = item['queryAA']     
+                
                 pos = item['codon'] + 1
+                nuc_start = item['codonNucRange']['begin']
+                nuc_end = item['codonNucRange']['end']
 
                 mutation = '%s_%s%d%s' % (gene, refAA, pos, altAA)
-                accession_id_list.append(data[i]['seqName'])
+                accession_id_list.append(data['results'][i]['seqName'])
                 mutation_list.append(mutation)
                 gene_list.append(gene)
                 refAA_list.append(refAA)
                 altAA_list.append(altAA)
                 codon_pos_list.append(pos)
+                nuc_start_list.append(nuc_start)
+                nuc_end_list.append(nuc_end)
 
 
     df['accession_id'] = accession_id_list
@@ -86,6 +97,8 @@ def extract_variant_list(json_path, seq_run):
     df['codon_position'] = codon_pos_list
     df['refAA'] = refAA_list
     df['altAA'] = altAA_list
+    df['start_nuc_pos'] = nuc_start_list
+    df['end_nuc_pos'] = nuc_end_list
 
     path = '%s_nextclade_variant_summary.csv' % seq_run
     df.to_csv(path, index=False)
@@ -96,18 +109,37 @@ def get_nextclade(json_path, seq_run):
     # create pd data frame to fill
     accession_id_list = []
     clade_list = []
+    totalSubstitutions_list = []
+    totalDeletions_list = []
+    totalInsertions_list = []
+    totalAASubstitutions_list = []
+    totalAADeletions_list = []
+    
+    
+    
     df = pd.DataFrame()
 
     with open(json_path) as f:
         data = json.load(f)
 
-    for i in range(len(data)):
-        if 'clade' in data[i].keys():
-            accession_id_list.append(data[i]['seqName'])
-            clade_list.append(data[i]['clade'])
+    for i in range(len(data['results'])):
+        if 'clade' in data['results'][i].keys():
+            accession_id_list.append(data['results'][i]['seqName'])
+            clade_list.append(data['results'][i]['clade'])
+            totalSubstitutions_list.append(data['results'][i]['totalSubstitutions'])
+            totalDeletions_list.append(data['results'][i]['totalDeletions'])
+            totalInsertions_list.append(data['results'][i]['totalInsertions'])
+            totalAASubstitutions_list.append(data['results'][i]['totalAminoacidSubstitutions'])
+            totalAADeletions_list.append(data['results'][i]['totalAminoacidDeletions'])
+            
 
     df['accession_id'] = accession_id_list
     df['nextclade'] = clade_list
+    df['total_nucleotide_mutations'] = totalSubstitutions_list
+    df['total_nucleotide_deletions'] = totalDeletions_list
+    df['total_nucleotide_insertions'] = totalInsertions_list
+    df['total_AA_substitutions'] = totalAASubstitutions_list
+    df['total_AA_deletions'] = totalAADeletions_list
 
     path = '%s_nextclade_results.csv' % seq_run
     df.to_csv(path, index = False)
